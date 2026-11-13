@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils"
 type AuthShellProps = {
   variant: "signin" | "register"
   cardRef?: Ref<HTMLDivElement>
-  eyebrow: string
   title: string
   subtitle: string
   children: ReactNode
@@ -13,16 +12,16 @@ type AuthShellProps = {
 }
 
 const HEADLINES = {
-  signin: { lead: "Cool deals,", trail: "chill prices." },
-  register: { lead: "Join the", trail: "chill side." },
+  signin: { lead: "Cool deals,", trail: "chill prices" },
+  register: { lead: "Join the", trail: "chill side" },
 }
 
-export function AuthShell({ variant, cardRef, eyebrow, title, subtitle, children, footer }: AuthShellProps) {
+export function AuthShell({ variant, cardRef, title, subtitle, children, footer }: AuthShellProps) {
   const register = variant === "register"
   const headline = HEADLINES[variant]
 
   return (
-    <div className="flex min-h-svh items-center justify-center px-4 pt-24 pb-10 select-none md:py-24 [&_input]:select-text">
+    <div className="flex min-h-svh items-center justify-center px-4 pt-24 pb-10 md:py-24">
       <div
         ref={cardRef}
         className={cn(
@@ -51,8 +50,7 @@ export function AuthShell({ variant, cardRef, eyebrow, title, subtitle, children
         </section>
 
         <section className={cn("flex flex-col justify-center p-8 md:p-12", register && "md:order-1")}>
-          <p className="text-muted-foreground font-mono text-[11px] tracking-[0.25em] uppercase">{eyebrow}</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">{title}</h2>
           <p className="text-muted-foreground mt-2 text-sm">{subtitle}</p>
           <div className="mt-8">{children}</div>
           <div className="mt-8 border-t pt-6 text-sm">{footer}</div>

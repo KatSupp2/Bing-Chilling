@@ -42,9 +42,8 @@ export function LoginPage() {
     <AuthShell
       variant="signin"
       cardRef={cardRef}
-      eyebrow="Sign in"
-      title="Welcome back."
-      subtitle="Sign in to continue shopping."
+      title="Welcome back"
+      subtitle="Sign in to continue shopping"
       footer={
         <p className="text-muted-foreground">
           New here?{" "}

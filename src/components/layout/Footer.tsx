@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { Logo } from "@/components/Logo"
 import { useAuth } from "@/store/auth"
 import { useConnection } from "@/store/connection"
+import { useNotifications } from "@/store/notifications"
 
 const year = new Date().getFullYear()
 
@@ -11,6 +12,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
 
 export function Footer() {
   const goOffline = useConnection((s) => s.goOffline)
+  const pushNotification = useNotifications((s) => s.push)
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<{ type: "error" | "success"; message: string } | null>(null)
 
@@ -29,12 +31,10 @@ export function Footer() {
     const hi = firstName ? `, ${firstName}` : ""
     setStatus({ type: "success", message: `You're in${hi}. Something good will find you at ${value}.` })
     toast(`Welcome to the inner circle${hi}.`, {
-      description: "We'll only write when it's worth it: early drops and deals picked just for you.",
+      description: "Only early drops and deals worth your time.",
       position: "bottom-left",
-      duration: 7000,
-      style: { width: 420, padding: "20px 22px" },
-      classNames: { title: "!text-base !font-semibold", description: "!text-sm !leading-relaxed" },
     })
+    pushNotification("You joined the Bing Chilling community")
     setEmail("")
   }
 
@@ -49,7 +49,7 @@ export function Footer() {
             />
             <span className="text-lg font-semibold">Bing Chilling</span>
           </div>
-          <p className="text-background/70 text-sm">Cool deals, chill prices.</p>
+          <p className="text-background/70 text-sm">Cool deals, chill prices</p>
           <form onSubmit={subscribe} noValidate className="space-y-2">
             <label htmlFor="newsletter" className="text-sm font-medium">
               Join the community

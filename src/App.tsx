@@ -11,6 +11,7 @@ import { CartPage } from "@/pages/CartPage"
 import { CheckoutPage } from "@/pages/CheckoutPage"
 import { HomePage } from "@/pages/HomePage"
 import { LoginPage } from "@/pages/LoginPage"
+import { OrdersPage } from "@/pages/OrdersPage"
 import { RegisterPage } from "@/pages/RegisterPage"
 
 const AUTH_ROUTES = ["/login", "/register"]
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

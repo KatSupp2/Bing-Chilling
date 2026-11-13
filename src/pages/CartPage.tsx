@@ -38,10 +38,15 @@ export function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="text-muted-foreground">Your cart is empty.</p>
-        <Button asChild>
-          <TransitionLink to={lastShopUrl()}>Browse products</TransitionLink>
+      <div className="step-in flex flex-col items-center py-16 text-center md:py-24">
+        <p className="text-muted-foreground font-mono text-[11px] tracking-[0.25em] uppercase">Your cart</p>
+        <h1 className="mt-4 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl">
+          Nothing here yet
+          <br />
+          <span className="text-muted-foreground">but plenty out there</span>
+        </h1>
+        <Button className="mt-10 h-11 rounded-full px-6" asChild>
+          <TransitionLink to={lastShopUrl()}>Start shopping</TransitionLink>
         </Button>
       </div>
     )

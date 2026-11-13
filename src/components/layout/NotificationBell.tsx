@@ -52,7 +52,7 @@ export function NotificationBell() {
         ) : (
           <ul className="max-h-80 overflow-y-auto py-1">
             {items.map((n) => (
-              <li key={n.id} className="flex items-start gap-2.5 px-3 py-2 select-text">
+              <li key={n.id} className="flex items-start gap-2.5 px-3 py-2">
                 <span
                   aria-hidden="true"
                   className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-foreground")}

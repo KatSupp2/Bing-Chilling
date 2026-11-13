@@ -95,9 +95,8 @@ export function RegisterPage() {
     <AuthShell
       variant="register"
       cardRef={cardRef}
-      eyebrow="Register"
-      title="Create an account."
-      subtitle="Join Bing Chilling in under a minute."
+      title="Create an account"
+      subtitle="Pull up a chair, we saved you a spot"
       footer={
         <p className="text-muted-foreground">
           Already have an account?{" "}

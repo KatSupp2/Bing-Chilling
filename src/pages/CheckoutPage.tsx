@@ -4,17 +4,30 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { PlaceOrderDialog } from "@/components/PlaceOrderDialog"
+import { PaymentStep, ReviewStep, ShippingStep } from "@/components/CheckoutSteps"
 import { formatPrice } from "@/data/products"
 import { usePerceivedProgress } from "@/hooks/usePerceivedProgress"
+import {
+  DELIVERY,
+  paymentSummary,
+  validatePayment,
+  validateShipping,
+  type Errors,
+  type PaymentInfo,
+  type ShippingInfo,
+} from "@/lib/checkout"
 import { cn } from "@/lib/utils"
 import { useTransitionNavigate } from "@/lib/useTransitionNavigate"
 import { useAuth } from "@/store/auth"
 import { useCart } from "@/store/cart"
 import { useNotifications } from "@/store/notifications"
+import { recordOrder } from "@/store/orders"
+import { getCheckoutDetails, saveCheckoutDetails } from "@/store/checkoutProfile"
 import { useWelcome } from "@/store/welcome"
 
 const STEPS = ["Shipping", "Payment", "Review"] as const
+const NEXT_LABELS = ["Continue to payment", "Review order"]
 
 const fakePayment = (fail: boolean) =>
   new Promise<void>((resolve, reject) =>
@@ -28,7 +41,16 @@ export function CheckoutPage() {
   const [step, setStep] = useState(0)
   const [simulateFailure, setSimulateFailure] = useState(false)
   const payment = usePerceivedProgress({ holdMs: 1400, failHoldMs: 1600 })
-  const firstName = useAuth((s) => s.user?.name.trim().split(/\s+/)[0])
+  const userName = useAuth((s) => s.user?.name ?? "")
+  const firstName = userName.trim().split(/\s+/)[0]
+  const [saved] = useState(getCheckoutDetails)
+  const [shipping, setShipping] = useState<ShippingInfo>(
+    () => saved?.shipping ?? { name: userName, phone: "", address: "", city: "", delivery: "standard" },
+  )
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>(() =>
+    saved ? { ...saved.payment, cvc: "" } : { method: "card", card: "", expiry: "", cvc: "", gcash: "" },
+  )
+  const [errors, setErrors] = useState<Errors>({})
 
   const busy = payment.status !== "idle"
 
@@ -46,18 +68,54 @@ export function CheckoutPage() {
 
   if (items.length === 0 && !busy) return <Navigate to="/cart" replace />
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  let subtotal = 0
+  let count = 0
+  for (const i of items) {
+    subtotal += i.price * i.quantity
+    count += i.quantity
+  }
+  const delivery = DELIVERY[shipping.delivery]
+  const total = subtotal + delivery.fee
+
+  const goTo = (next: number) => {
+    setErrors({})
+    setStep(next)
+  }
+
+  const continueToNext = () => {
+    const found = step === 0 ? validateShipping(shipping) : validatePayment(paymentInfo)
+    setErrors(found)
+    if (Object.keys(found).length > 0) {
+      const first = Object.keys(found)[0]
+      document.getElementById(`${step === 0 ? "ship" : "pay"}-${first}`)?.focus()
+      return
+    }
+    goTo(step + 1)
+  }
   const isLast = step === STEPS.length - 1
 
   const placeOrder = async () => {
     try {
       await payment.run(fakePayment(simulateFailure))
-      toast("Order placed. Thank you!", { description: "We'll let you know the moment it ships." })
-      push(`Order placed: ${formatPrice(total)}`)
-      if (mounted.current) transitionTo("/", clear)
+      saveCheckoutDetails(shipping, paymentInfo)
+      const order = recordOrder({
+        items,
+        subtotal,
+        fee: delivery.fee,
+        total,
+        delivery: delivery.label,
+        eta: delivery.detail,
+        shipTo: `${shipping.name}, ${shipping.address}, ${shipping.city}`,
+        payment: paymentSummary(paymentInfo),
+      })
+      toast("Order placed. Thank you!", {
+        description: "We'll let you know the moment it ships.",
+      })
+      push(order ? `Order ${order.id} placed: ${formatPrice(total)}` : `Order placed: ${formatPrice(total)}`)
+      if (mounted.current) transitionTo("/orders?tab=pending", clear)
       else clear()
     } catch {
-      toast.error("Your payment didn't go through.", {
+      toast("Your payment didn't go through.", {
         description: "No charge was made. Give it another try whenever you're ready.",
       })
       push("Payment failed: no charge was made")
@@ -67,7 +125,6 @@ export function CheckoutPage() {
   if (busy) {
     const done = payment.status === "done"
     const failed = payment.status === "failed"
-    const count = items.reduce((sum, i) => sum + i.quantity, 0)
     return (
       <Card className="mx-auto max-w-2xl">
         <div className="pay-stage flex min-h-80 flex-col items-center justify-center px-8 py-14 text-center" aria-live="polite">
@@ -131,43 +188,71 @@ export function CheckoutPage() {
       </CardHeader>
 
       <CardContent className="min-h-32">
-        {
-          <div key={step} className="step-in space-y-3">
-            <p className="text-muted-foreground">
-              {STEPS[step]} step placeholder. Order total: {formatPrice(total)}
+        <div key={step} className="step-in">
+          {saved && step < 2 && (
+            <p className="bg-muted/60 text-muted-foreground mb-6 rounded-lg px-3 py-2 text-xs">
+              {step === 0
+                ? "Welcome back. We've filled in your details from last time."
+                : paymentInfo.method === "card"
+                  ? "Your saved card is ready. Just add the CVC to continue."
+                  : "We've kept your payment choice from last time."}
             </p>
-            {isLast && (
+          )}
+          {step === 0 && (
+            <ShippingStep
+              value={shipping}
+              onChange={(next) => {
+                setShipping(next)
+                if (Object.keys(errors).length) setErrors(validateShipping(next))
+              }}
+              errors={errors}
+            />
+          )}
+          {step === 1 && (
+            <PaymentStep
+              value={paymentInfo}
+              onChange={(next) => {
+                setPaymentInfo(next)
+                if (Object.keys(errors).length) setErrors(validatePayment(next))
+              }}
+              errors={errors}
+            />
+          )}
+          {isLast && (
+            <ReviewStep items={items} shipping={shipping} payment={paymentInfo} subtotal={subtotal} onEdit={goTo}>
               <label className="text-muted-foreground flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={simulateFailure}
                   onChange={(e) => setSimulateFailure(e.target.checked)}
                 />
-                Simulate a failed payment
+                Failed payment
               </label>
-            )}
-          </div>
-        }
+            </ReviewStep>
+          )}
+        </div>
       </CardContent>
 
       <CardFooter className="justify-between">
         <Button
           variant="outline"
           disabled={busy}
-          onClick={() => (step === 0 ? transitionTo("/cart") : setStep(step - 1))}
+          onClick={() => (step === 0 ? transitionTo("/cart") : goTo(step - 1))}
         >
           {step === 0 ? "Back to cart" : "Back"}
         </Button>
         {isLast ? (
-          <ConfirmDialog
+          <PlaceOrderDialog
             trigger={<Button disabled={busy}>Place order</Button>}
-            title="Place this order?"
-            description={`You will be charged ${formatPrice(total)}.`}
-            confirmLabel="Place order"
+            total={total}
+            itemCount={count}
+            shipTo={`${shipping.name}, ${shipping.address}, ${shipping.city}`}
+            delivery={`${delivery.label} · ${delivery.detail.toLowerCase()}`}
+            payment={paymentSummary(paymentInfo)}
             onConfirm={placeOrder}
           />
         ) : (
-          <Button onClick={() => setStep(step + 1)}>Next</Button>
+          <Button onClick={continueToNext}>{NEXT_LABELS[step]}</Button>
         )}
       </CardFooter>
     </Card>
