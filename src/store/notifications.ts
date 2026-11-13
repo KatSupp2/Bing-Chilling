@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { omit } from "@/lib/utils"
 import { useAuth } from "./auth"
 
 type AppNotification = {
@@ -44,3 +45,7 @@ export function useNotifications<T>(selector?: (inbox: NotificationView) => T) {
   const view: NotificationView = { items, push, markAllRead }
   return selector ? selector(view) : view
 }
+
+
+export const forgetNotifications = (email: string) =>
+  useNotificationStore.setState((s) => ({ inboxes: omit(s.inboxes, email) }))

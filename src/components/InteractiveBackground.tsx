@@ -103,6 +103,11 @@ export function InteractiveBackground({ visible = true }: { visible?: boolean })
         }
       }
 
+      const hidden = hiddenSince.current
+      const p = hidden === null ? 0 : Math.min(Math.max((time - hidden) / HIDE_FADE_MS, 0), 1)
+      const calm = 1 - p * p * (3 - 2 * p)
+      const amp = WAVE_AMP * calm
+
       lines.forEach((line, li) => {
         const off = offsets[li]
         const vel = velocities[li]
@@ -111,7 +116,7 @@ export function InteractiveBackground({ visible = true }: { visible?: boolean })
         if (ys.length !== n) ys = new Float32Array(n)
 
         for (let i = 0; i < n; i++) {
-          ys[i] = line.y + WAVE_AMP * Math.sin(i * SPACING * WAVE_FREQ + time * WAVE_SPEED + line.phase)
+          ys[i] = line.y + amp * Math.sin(i * SPACING * WAVE_FREQ + time * WAVE_SPEED + line.phase)
         }
 
         if (!reduceMotion) {

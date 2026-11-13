@@ -2,13 +2,15 @@ import { create } from "zustand"
 
 type WelcomeMoment = {
   headline: string
+  subline?: string
+  duration?: number
   id: number
 }
 
 type WelcomeState = {
   current: WelcomeMoment | null
   gust: number
-  show: (kind: "new" | "returning", name: string) => void
+  show: (kind: "new" | "returning" | "farewell", name: string) => void
   dismiss: () => void
 }
 
@@ -26,7 +28,18 @@ export const useWelcome = create<WelcomeState>()((set) => ({
   gust: 0,
   show: (kind, name) => {
     const who = name.trim() || "friend"
-    const headline = kind === "new" ? `Welcome, ${who}.` : `${greeting()}, ${who}.`
+    if (kind === "farewell") {
+      set({
+        current: {
+          headline: `Until next time, ${who}`,
+          subline: "The door's always open. Come back anytime",
+          duration: 2800,
+          id: nextId++,
+        },
+      })
+      return
+    }
+    const headline = kind === "new" ? `Welcome, ${who}` : `${greeting()}, ${who}`
     set({ current: { headline, id: nextId++ } })
   },
   dismiss: () => set((s) => (s.current ? { current: null, gust: s.gust + 1 } : s)),

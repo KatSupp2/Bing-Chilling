@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react"
-import { ArrowUpIcon, CheckCircle2Icon } from "lucide-react"
+import { TransitionLink } from "@/components/TransitionLink"
+import { subscribeNewsletter } from "@/store/newsletter"
 import { toast } from "sonner"
 import { Logo } from "@/components/Logo"
 import { useAuth } from "@/store/auth"
@@ -7,6 +8,42 @@ import { useConnection } from "@/store/connection"
 import { useNotifications } from "@/store/notifications"
 
 const year = new Date().getFullYear()
+
+const shop = (category: string) => `/?cat=${encodeURIComponent(category)}`
+
+const COLUMNS: { title: string; links: [string, string][] }[] = [
+  {
+    title: "Shop",
+    links: [
+      ["All products", "/"],
+      ["Apparel", shop("Apparel")],
+      ["Home & Living", shop("Home & Living")],
+      ["Bags & Accessories", shop("Bags & Accessories")],
+      ["Audio", shop("Audio")],
+      ["Phones & Cameras", shop("Phones & Cameras")],
+    ],
+  },
+  {
+    title: "Explore",
+    links: [
+      ["PC Parts", shop("PC Parts")],
+      ["Beauty", shop("Beauty")],
+      ["Sports & Outdoors", shop("Sports & Outdoors")],
+      ["Footwear", shop("Footwear")],
+      ["Gaming", shop("Gaming")],
+      ["Toys & Hobbies", shop("Toys & Hobbies")],
+    ],
+  },
+  {
+    title: "Your account",
+    links: [
+      ["Manage account", "/account"],
+      ["Pending orders", "/orders?tab=pending"],
+      ["Order history", "/orders?tab=history"],
+      ["Cart", "/cart"],
+    ],
+  },
+]
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
 
@@ -35,22 +72,28 @@ export function Footer() {
       position: "bottom-left",
     })
     pushNotification("You joined the Bing Chilling community")
+    subscribeNewsletter(value)
     setEmail("")
   }
 
+  const link = "text-background/70 hover:text-background transition-colors"
+
   return (
     <footer data-invert-zone className="text-background mt-16">
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        <div className="max-w-xl space-y-4">
-          <div className="flex items-center gap-2.5">
-            <Logo
-              title=""
-              className="[&_.fill-primary]:fill-background [&_.fill-primary-foreground]:fill-foreground [&_.stroke-primary-foreground]:stroke-foreground"
-            />
-            <span className="text-lg font-semibold">Bing Chilling</span>
+      <div className="mx-auto max-w-6xl px-4 pt-12">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <Logo
+                title=""
+                className="[&_.fill-primary]:fill-background [&_.fill-primary-foreground]:fill-foreground [&_.stroke-primary-foreground]:stroke-foreground"
+              />
+              <span className="text-lg font-semibold">Bing Chilling</span>
+            </div>
+            <p className="text-background/70 text-sm">Cool deals, chill prices</p>
           </div>
-          <p className="text-background/70 text-sm">Cool deals, chill prices</p>
-          <form onSubmit={subscribe} noValidate className="space-y-2">
+
+          <form onSubmit={subscribe} noValidate className="w-full space-y-2 md:max-w-md">
             <label htmlFor="newsletter" className="text-sm font-medium">
               Join the community
             </label>
@@ -77,34 +120,58 @@ export function Footer() {
             </div>
             <p id="newsletter-status" aria-live="polite" className="min-h-5 text-xs">
               {status?.type === "error" && <span className="text-destructive">{status.message}</span>}
-              {status?.type === "success" && (
-                <span className="text-background/80 inline-flex items-center gap-1">
-                  <CheckCircle2Icon className="size-3.5" /> {status.message}
-                </span>
-              )}
+              {status?.type === "success" && <span className="text-background/80">{status.message}</span>}
             </p>
           </form>
         </div>
+
+        <nav aria-label="Footer" className="border-background/15 mt-8 grid grid-cols-2 gap-x-6 gap-y-8 border-t pt-8 text-xs md:grid-cols-4">
+          {COLUMNS.map((column) => (
+            <div key={column.title} className="space-y-3">
+              <p className="text-background text-xs font-semibold">{column.title}</p>
+              <ul className="space-y-2.5">
+                {column.links.map(([label, to]) => (
+                  <li key={label}>
+                    <TransitionLink to={to} className={link}>
+                      {label}
+                    </TransitionLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div className="space-y-3">
+            <p className="text-background text-xs font-semibold">Help</p>
+            <ul className="text-background/70 space-y-2.5">
+              <li>7-day easy returns</li>
+              <li>Support Mon–Sat, 9am–6pm</li>
+              <li>
+                <button type="button" onClick={() => goOffline(true)} className={link}>
+                  Lost Connection?
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
       </div>
 
-      <div className="border-background/15 border-t">
-        <div className="text-background/60 mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 text-xs">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="border-background/15 text-background/60 mt-10 flex flex-col gap-3 border-t py-5 text-xs sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <p>© {year} Bing Chilling</p>
-            <button
-              type="button"
-              onClick={() => goOffline(true)}
-              className="hover:text-background underline-offset-4 transition-colors hover:underline"
-            >
-              Lost Connection?
-            </button>
+            <div className="flex items-center gap-3">
+              <TransitionLink to="/account" className={link}>
+                Manage account
+              </TransitionLink>
+              <span aria-hidden="true" className="text-background/30">
+                |
+              </span>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className={link}>
+                Back to top
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="hover:text-background flex items-center gap-1 transition-colors"
-          >
-            Back to top <ArrowUpIcon className="size-3.5" />
-          </button>
+          <p>Philippines</p>
         </div>
       </div>
     </footer>

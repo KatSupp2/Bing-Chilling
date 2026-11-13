@@ -4,9 +4,10 @@ import { Toaster } from "@/components/ui/sonner"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { InteractiveBackground } from "@/components/InteractiveBackground"
 import { OfflineScreen } from "@/components/OfflineScreen"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import { PullSwitch } from "@/components/PullSwitch"
 import { WelcomeOverlay } from "@/components/WelcomeOverlay"
 import { useApplyTheme } from "@/store/theme"
+import { AccountPage } from "@/pages/AccountPage"
 import { CartPage } from "@/pages/CartPage"
 import { CheckoutPage } from "@/pages/CheckoutPage"
 import { HomePage } from "@/pages/HomePage"
@@ -41,14 +42,13 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <WelcomeOverlay />
       <OfflineScreen />
-      <div className="vt-theme-toggle bg-muted fixed top-4 right-4 z-50 flex h-14 items-center rounded-2xl border px-2.5 shadow-md">
-        <ThemeToggle />
-      </div>
+      <PullSwitch />
       <Toaster position="top-right" theme={theme} offset={{ top: 88, right: 16 }} mobileOffset={{ top: 88 }} />
     </BrowserRouter>
   )

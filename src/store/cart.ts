@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { omit } from "@/lib/utils"
 import type { Product } from "@/data/products"
 import { useAuth } from "./auth"
 
@@ -59,3 +60,6 @@ export function useCart<T>(selector?: (cart: CartView) => T) {
   const view: CartView = { items, add, decrement, remove, insert, clear }
   return selector ? selector(view) : view
 }
+
+
+export const forgetCart = (email: string) => useCartStore.setState((s) => ({ carts: omit(s.carts, email) }))

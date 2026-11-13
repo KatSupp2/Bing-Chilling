@@ -112,7 +112,7 @@ export function PlaceOrderDialog({
             {rows.map(([label, value]) => (
               <div key={label} className="flex justify-between gap-6 px-4 py-2.5">
                 <dt className="text-muted-foreground shrink-0">{label}</dt>
-                <dd className="truncate text-right font-medium" title={value}>
+                <dd className="truncate text-right font-medium">
                   {value}
                 </dd>
               </div>
@@ -134,7 +134,7 @@ export function PlaceOrderDialog({
               Hold to place order
             </HoldToConfirm>
           </div>
-          <p id="hold-hint" className="text-muted-foreground text-center text-xs">
+          <p id="hold-hint" className="sr-only">
             Press and hold the button for a second to confirm. Letting go early cancels.
           </p>
         </div>

@@ -36,7 +36,7 @@ export function useTransitionNavigate() {
       }
       const root = document.documentElement
       const id = ++transitionId
-      root.dataset.vt = scene ? "scene" : "app"
+      root.dataset.vt = isAuth(from) && isAuth(to) ? "auth" : isAuth(to) ? "exit" : scene ? "scene" : "app"
       const transition = document.startViewTransition(go)
       transition.finished.finally(() => {
         if (id === transitionId) delete root.dataset.vt

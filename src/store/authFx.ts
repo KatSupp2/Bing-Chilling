@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-export type AuthFxEvent = { kind: "error" | "settle" | "success"; x: number; y: number; id: number }
+export type AuthFxEvent = { kind: "error" | "success"; x: number; y: number; id: number }
 
 type AuthFxState = {
   last: AuthFxEvent | null

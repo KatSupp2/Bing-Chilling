@@ -18,7 +18,7 @@ export function WelcomeOverlay() {
 
   useEffect(() => {
     if (!current) return
-    const timer = window.setTimeout(leave, SHOW_MS)
+    const timer = window.setTimeout(leave, current.duration ?? SHOW_MS)
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && leave()
     window.addEventListener("keydown", onKey)
     return () => {
@@ -63,6 +63,14 @@ export function WelcomeOverlay() {
           ))}
           <span className="sr-only">{current.headline}</span>
         </h2>
+        {current.subline && (
+          <p
+            className="welcome-sub text-muted-foreground mt-5 text-lg md:text-2xl"
+            style={{ animationDelay: `${120 + current.headline.length * 11}ms` }}
+          >
+            {current.subline}
+          </p>
+        )}
       </div>
     </div>
   )

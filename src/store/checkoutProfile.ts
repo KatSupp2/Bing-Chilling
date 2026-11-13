@@ -1,8 +1,9 @@
 import { create } from "zustand"
+import { omit } from "@/lib/utils"
 import type { PaymentInfo, ShippingInfo } from "@/lib/checkout"
 import { useAuth } from "./auth"
 
-type SavedDetails = { shipping: ShippingInfo; payment: Omit<PaymentInfo, "cvc"> }
+type SavedDetails = { shipping: ShippingInfo; payment: PaymentInfo }
 
 type CheckoutProfileStore = {
   profiles: Record<string, SavedDetails>
@@ -15,7 +16,7 @@ export function saveCheckoutDetails(shipping: ShippingInfo, payment: PaymentInfo
   if (!key) return
   const saved: SavedDetails = {
     shipping: { ...shipping },
-    payment: { method: payment.method, card: payment.card, expiry: payment.expiry, gcash: payment.gcash },
+    payment: { ...payment },
   }
   useCheckoutProfileStore.setState((s) => ({ profiles: { ...s.profiles, [key]: saved } }))
 }
@@ -24,3 +25,7 @@ export function getCheckoutDetails(): SavedDetails | undefined {
   const key = useAuth.getState().user?.email
   return key ? useCheckoutProfileStore.getState().profiles[key] : undefined
 }
+
+
+export const forgetCheckoutDetails = (email: string) =>
+  useCheckoutProfileStore.setState((s) => ({ profiles: omit(s.profiles, email) }))

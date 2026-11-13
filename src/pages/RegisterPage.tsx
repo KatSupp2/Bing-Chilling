@@ -8,11 +8,10 @@ import { Label } from "@/components/ui/label"
 import { useTransitionNavigate } from "@/lib/useTransitionNavigate"
 import { useAuth } from "@/store/auth"
 import { useAuthFx } from "@/store/authFx"
-import { useWelcome } from "@/store/welcome"
 
 type Errors = Partial<Record<"name" | "email" | "password" | "confirm", string>>
 
-const SETTLE_MS = 850
+const CREATING_MS = 600
 
 export function RegisterPage() {
   const { user, register, isEmailTaken } = useAuth()
@@ -21,10 +20,9 @@ export function RegisterPage() {
   const [errors, setErrors] = useState<Errors>({})
   const cardRef = useRef<HTMLDivElement>(null)
   const emitFx = useAuthFx((s) => s.emit)
-  const showWelcome = useWelcome((s) => s.show)
   const [creating, setCreating] = useState(false)
-  const settleTimer = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(settleTimer.current), [])
+  const creatingTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(creatingTimer.current), [])
 
   if (user) return <Navigate to="/" replace />
 
@@ -52,22 +50,8 @@ export function RegisterPage() {
     }
 
     setCreating(true)
-
-    const proceed = () => {
-      emitFx("success", cardRef.current)
-      transitionTo("/", () => {
-        register({ name: form.name, email: form.email, password: form.password })
-        showWelcome("new", form.name)
-      })
-    }
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduceMotion) {
-      proceed()
-    } else {
-      emitFx("settle", cardRef.current)
-      settleTimer.current = window.setTimeout(proceed, SETTLE_MS)
-    }
+    register({ name: form.name, email: form.email, password: form.password })
+    creatingTimer.current = window.setTimeout(() => transitionTo("/login"), CREATING_MS)
   }
 
   const field = (id: keyof typeof form, label: string, type = "text", autoComplete?: string) => (

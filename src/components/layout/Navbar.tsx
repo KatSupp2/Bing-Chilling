@@ -23,12 +23,11 @@ export function Navbar() {
   const pending = useUnseenOrderCount()
 
   return (
-    <header className="vt-header bg-muted fixed top-4 right-24 left-4 z-40 rounded-2xl border shadow-md sm:right-auto sm:left-1/2 sm:w-[min(760px,calc(100%-12rem))] sm:-translate-x-1/2">
+    <header className="vt-header bg-muted fixed top-4 right-4 left-20 z-40 rounded-2xl border shadow-md sm:right-auto sm:left-1/2 sm:w-[min(760px,calc(100%-12rem))] sm:-translate-x-1/2">
       <div className="flex h-14 items-center gap-3 px-3 sm:gap-4 sm:px-4">
         <Link
           to="/"
           aria-label="Bing Chilling home"
-          title="Bing Chilling"
           className="flex shrink-0 items-center"
           onClick={(e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
@@ -52,7 +51,6 @@ export function Navbar() {
           <TransitionLink
             to="/orders"
             aria-label={pending > 0 ? `Your orders, ${pending} new` : "Your orders"}
-            title="Your orders"
           >
             <PackageIcon />
             {pending > 0 && (

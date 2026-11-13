@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { omit } from "@/lib/utils"
 import { useAuth } from "./auth"
 import type { CartItem } from "./cart"
 
@@ -100,3 +101,7 @@ export function useUnseenOrderCount() {
     return (s.histories[email] ?? EMPTY).filter((o) => o.status !== "delivered" && o.updatedAt > seen).length
   })
 }
+
+
+export const forgetOrders = (email: string) =>
+  useOrdersStore.setState((s) => ({ histories: omit(s.histories, email), seenAt: omit(s.seenAt, email) }))

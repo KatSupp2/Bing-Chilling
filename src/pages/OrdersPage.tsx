@@ -197,7 +197,7 @@ function OrderCard({
           <p>
             <span className="text-foreground font-medium">Delivery</span> · {order.delivery}
           </p>
-          <p className="truncate" title={order.shipTo}>
+          <p className="truncate">
             <span className="text-foreground font-medium">To</span> · {order.shipTo}
           </p>
           <p>
@@ -363,7 +363,7 @@ export function OrdersPage() {
                   />
                   <div className="space-y-2 p-3">
                     <div>
-                      <p className="truncate text-sm font-medium" title={product.name}>
+                      <p className="truncate text-sm font-medium">
                         {product.name}
                       </p>
                       <p className="text-muted-foreground text-xs">

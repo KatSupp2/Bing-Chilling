@@ -11,10 +11,10 @@ import { useAuthFx } from "@/store/authFx"
 import { useWelcome } from "@/store/welcome"
 
 export function LoginPage() {
-  const { user, login, canLogin } = useAuth()
+  const { user, login, canLogin, justRegistered, clearJustRegistered } = useAuth()
   const transitionTo = useTransitionNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(() => justRegistered?.email ?? "")
   const [password, setPassword] = useState("")
   const cardRef = useRef<HTMLDivElement>(null)
   const emitFx = useAuthFx((s) => s.emit)
@@ -29,9 +29,11 @@ export function LoginPage() {
     e.preventDefault()
     if (email.trim() && password && canLogin(email, password)) {
       emitFx("success", cardRef.current)
+      const firstVisit = justRegistered?.email === email.trim().toLowerCase()
       transitionTo(returnTo, () => {
         login(email, password)
-        showWelcome("returning", useAuth.getState().user?.name ?? "")
+        clearJustRegistered()
+        showWelcome(firstVisit ? "new" : "returning", useAuth.getState().user?.name ?? "")
       })
     } else {
       emitFx("error", cardRef.current)
@@ -74,6 +76,7 @@ export function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
+            autoFocus={Boolean(justRegistered)}
           />
         </div>
         <Button type="submit" className="h-11 w-full rounded-full">

@@ -23,10 +23,12 @@ const SPIN_SPEED = 0.0008
 const SPIRAL_TWIST = 2.4
 const SPIRAL_RADIUS = 320
 const BREATHE = 0.07
-const STORM_EASE = 0.035
 const STORM_CALM = 1800
 const STORM_BUILD = 1800
 const PHASE_HOME = 0.06
+const ENTER_SPREAD = 900
+const ENTER_MS = 600
+const ENTER_SHIFT = 16
 const SHUDDER_TIME = 600
 const RED_TIME = 900
 const RED_HOLD = 0.35
@@ -35,7 +37,6 @@ const PERIOD_X = SPACING
 const PERIOD_Y = SPACING * 2
 
 const easeInOut = (t: number) => t * t * (3 - 2 * t)
-const easeInOutInverse = (y: number) => 0.5 - Math.sin(Math.asin(1 - 2 * y) / 3)
 
 export function LogoBackground({ active, vortex = false }: { active: boolean; vortex?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -63,13 +64,13 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
     let deactivatedAt = 0
     let lastErrorAt: number | null = null
     let success: { at: number; x: number; y: number } | null = null
+    let enteredAt: number | null = null
     let posX = 0
     let posY = 0
     let lastTime: number | null = null
     let storm = 0
     let phase = 0
     let buildP = 0
-    let settling = false
 
     const readColors = () => {
       const css = getComputedStyle(document.documentElement)
@@ -91,6 +92,7 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
     const wrap = (v: number, period: number) => ((v % period) + period) % period
 
     const draw = (now: number) => {
+      if (enteredAt !== null && now - enteredAt > ENTER_SPREAD + ENTER_MS) enteredAt = null
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.lineJoin = "round"
@@ -102,18 +104,14 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
         posX = wrap(posX + DRIFT_X * dt, PERIOD_X)
         posY = wrap(posY + DRIFT_Y * dt, PERIOD_Y)
 
-        const stormTarget = vortexRef.current && !settling ? 1 : 0
+        const stormTarget = vortexRef.current ? 1 : 0
         if (stormTarget === 1) {
           buildP = Math.min(1, buildP + dt / STORM_BUILD)
           storm = Math.max(storm, easeInOut(buildP))
-        } else if (!settling) {
+        } else {
           buildP = Math.max(0, buildP - dt / STORM_CALM)
           storm = Math.min(storm, easeInOut(buildP))
           if (storm < 0.001) storm = 0
-        } else {
-          storm += (stormTarget - storm) * STORM_EASE
-          if (storm < 0.001) storm = 0
-          buildP = easeInOutInverse(storm)
         }
         phase += SPIN_SPEED * storm * dt
         if (stormTarget === 0) {
@@ -173,6 +171,16 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
             y += Math.cos(now * 0.11 + seed * 1.3) * shakeAmp
           }
 
+          if (enteredAt !== null) {
+            const d = Math.min(Math.max((x / width + y / height) / 2, 0), 1)
+            const p = Math.min(Math.max((now - enteredAt - d * ENTER_SPREAD) / ENTER_MS, 0), 1)
+            const e = 1 - (1 - p) ** 3
+            alpha *= e
+            scale *= 0.6 + 0.4 * e
+            x -= (1 - e) * ENTER_SHIFT
+            y -= (1 - e) * ENTER_SHIFT
+          }
+
           if (success && warp > 0) {
             x = success.x + (x - success.x) * (1 + warpEase * 0.9)
             y = success.y + (y - success.y) * (1 + warpEase * 0.9)
@@ -222,7 +230,7 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
       if (activeRef.current) {
         success = null
         lastErrorAt = null
-        settling = false
+        enteredAt = reduceMotion ? null : performance.now()
       } else {
         deactivatedAt = performance.now()
       }
@@ -241,7 +249,6 @@ export function LogoBackground({ active, vortex = false }: { active: boolean; vo
     const handleFx = (ev: AuthFxEvent) => {
       if (reduceMotion) return
       if (ev.kind === "error") lastErrorAt = performance.now()
-      else if (ev.kind === "settle") settling = true
       else success = { at: performance.now(), x: ev.x, y: ev.y }
     }
     const unsubscribe = useAuthFx.subscribe((state, prev) => {

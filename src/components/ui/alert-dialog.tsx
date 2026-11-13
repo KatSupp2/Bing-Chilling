@@ -30,32 +30,6 @@ function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof
   )
 }
 
-function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-dialog-header"
-      className={cn(
-        "grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center sm:place-items-start sm:text-left",
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-dialog-footer"
-      className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
 function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
   return (
     <AlertDialogPrimitive.Title
@@ -79,14 +53,6 @@ function AlertDialogDescription({
   )
 }
 
-function AlertDialogAction(props: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
-  return (
-    <Button asChild>
-      <AlertDialogPrimitive.Action data-slot="alert-dialog-action" {...props} />
-    </Button>
-  )
-}
-
 function AlertDialogCancel(props: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
   return (
     <Button variant="outline" asChild>
@@ -99,10 +65,7 @@ export {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogDescription,
-  AlertDialogAction,
   AlertDialogCancel,
 }

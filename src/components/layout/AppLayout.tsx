@@ -9,7 +9,7 @@ export function AppLayout() {
   if (!user) return <Navigate to="/login" replace state={{ from: pathname + search }} />
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="vt-app-shell flex min-h-svh flex-col">
       <Navbar />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-28 pb-8">
         <Outlet />

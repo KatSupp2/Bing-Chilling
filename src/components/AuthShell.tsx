@@ -25,13 +25,13 @@ export function AuthShell({ variant, cardRef, title, subtitle, children, footer 
       <div
         ref={cardRef}
         className={cn(
-          "bg-card text-card-foreground grid w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl",
+          "vt-auth-card bg-card text-card-foreground grid w-full max-w-5xl overflow-hidden rounded-3xl border shadow-2xl",
           register ? "md:grid-cols-[1fr_1.15fr]" : "md:grid-cols-[1.15fr_1fr]",
         )}
       >
         <section
           className={cn(
-            "flex flex-col justify-center border-b p-8 md:border-b-0 md:p-12",
+            "vt-auth-brand flex flex-col justify-center border-b p-8 md:border-b-0 md:p-12",
             register ? "bg-muted/60 md:order-2 md:border-l" : "md:border-r",
           )}
         >
@@ -49,7 +49,7 @@ export function AuthShell({ variant, cardRef, title, subtitle, children, footer 
           </div>
         </section>
 
-        <section className={cn("flex flex-col justify-center p-8 md:p-12", register && "md:order-1")}>
+        <section className={cn("vt-auth-form flex flex-col justify-center p-8 md:p-12", register && "md:order-1")}>
           <h2 className="text-3xl font-semibold tracking-tight">{title}</h2>
           <p className="text-muted-foreground mt-2 text-sm">{subtitle}</p>
           <div className="mt-8">{children}</div>

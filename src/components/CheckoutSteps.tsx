@@ -2,8 +2,20 @@ import type { ReactNode } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { formatPrice } from "@/data/products"
-import { DELIVERY, METHODS, digits, paymentSummary, type Errors, type PaymentInfo, type ShippingInfo } from "@/lib/checkout"
+import { formatPrice, placeholderImage } from "@/data/products"
+import { BankLogo, CardLogo } from "@/components/PaymentLogos"
+import {
+  BANKS,
+  CARD_BRANDS,
+  DELIVERY,
+  METHODS,
+  digits,
+  paymentSummary,
+  type BankKey,
+  type Errors,
+  type PaymentInfo,
+  type ShippingInfo,
+} from "@/lib/checkout"
 import { cn } from "@/lib/utils"
 import type { CartItem } from "@/store/cart"
 
@@ -19,7 +31,7 @@ function Field({
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
-        className="h-10"
+        className="h-11"
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
         {...props}
@@ -81,10 +93,7 @@ export function ShippingStep({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="font-medium">Where should we send it?</h3>
-        <p className="text-muted-foreground text-sm">We'll only use this to get your order to you.</p>
-      </div>
+      <h3 className="text-lg font-semibold tracking-tight">Where should we send it?</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="ship-name" label="Full name" autoComplete="name" value={value.name} onChange={set("name")} error={errors.name} />
         <Field
@@ -128,6 +137,44 @@ export function ShippingStep({
   )
 }
 
+function ProviderPicker<K extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+  logo,
+}: {
+  label: string
+  options: Record<K, string>
+  value: K
+  onSelect: (key: K) => void
+  logo: (key: K) => ReactNode
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+      {(Object.keys(options) as K[]).map((key) => {
+        const active = value === key
+        return (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onSelect(key)}
+            className={cn(
+              "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors",
+              active ? "border-foreground" : "hover:bg-muted/50",
+            )}
+          >
+            {logo(key)}
+            <span className={cn(active ? "font-medium" : "text-muted-foreground")}>{options[key]}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function PaymentStep({
   value,
   onChange,
@@ -137,14 +184,12 @@ export function PaymentStep({
   onChange: (next: PaymentInfo) => void
   errors: Errors
 }) {
-  const cardDisplay = digits(value.card).replace(/(\d{4})(?=\d)/g, "$1 ")
+  const isCard = value.method === "card"
+  const shown = isCard ? digits(value.number).replace(/(\d{4})(?=\d)/g, "$1 ") : value.number
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="font-medium">How would you like to pay?</h3>
-        <p className="text-muted-foreground text-sm">You won't be charged until you place your order.</p>
-      </div>
+      <h3 className="text-lg font-semibold tracking-tight">How would you like to pay?</h3>
       <fieldset className="space-y-2">
         <legend className="sr-only">Payment method</legend>
         {(Object.keys(METHODS) as PaymentInfo["method"][]).map((key) => (
@@ -152,141 +197,155 @@ export function PaymentStep({
             key={key}
             name="method"
             checked={value.method === key}
-            onSelect={() => onChange({ ...value, method: key })}
+            onSelect={() => key !== value.method && onChange({ ...value, method: key, number: "" })}
             title={METHODS[key].label}
             detail={METHODS[key].detail}
+            aside={
+              key === "card" ? (
+                <span className="hidden gap-1.5 sm:flex">
+                  <CardLogo brand="visa" />
+                  <CardLogo brand="mastercard" />
+                </span>
+              ) : key === "bank" ? (
+                <span className="hidden gap-1.5 sm:flex">
+                  {(Object.keys(BANKS) as BankKey[]).map((b) => (
+                    <BankLogo key={b} bank={b} />
+                  ))}
+                </span>
+              ) : undefined
+            }
           />
         ))}
       </fieldset>
-      {value.method === "card" && (
-        <div key="card" className="step-in grid gap-4 sm:grid-cols-4">
+      {value.method !== "cod" && (
+        <div key={value.method} className="step-in space-y-4">
+          {isCard ? (
+            <ProviderPicker
+              label="Card type"
+              options={CARD_BRANDS}
+              value={value.brand}
+              onSelect={(brand) => onChange({ ...value, brand })}
+              logo={(brand) => <CardLogo brand={brand} />}
+            />
+          ) : (
+            <ProviderPicker
+              label="Bank or e-wallet"
+              options={BANKS}
+              value={value.bank}
+              onSelect={(bank) => onChange({ ...value, bank })}
+              logo={(bank) => <BankLogo bank={bank} />}
+            />
+          )}
           <Field
-            id="pay-card"
-            label="Card number"
+            id="pay-number"
+            label={isCard ? "Card number" : `${BANKS[value.bank]} account or mobile number`}
             inputMode="numeric"
-            autoComplete="cc-number"
-            placeholder="1234 5678 9012 3456"
-            className="sm:col-span-2"
-            value={cardDisplay}
-            onChange={(e) => onChange({ ...value, card: digits(e.target.value).slice(0, 16) })}
-            error={errors.card}
-          />
-          <Field
-            id="pay-expiry"
-            label="Expiry"
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            placeholder="MM/YY"
-            value={value.expiry}
-            onChange={(e) => {
-              const d = digits(e.target.value).slice(0, 4)
-              onChange({ ...value, expiry: d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d })
-            }}
-            error={errors.expiry}
-          />
-          <Field
-            id="pay-cvc"
-            label="CVC"
-            inputMode="numeric"
-            autoComplete="cc-csc"
-            placeholder="123"
-            value={value.cvc}
-            onChange={(e) => onChange({ ...value, cvc: digits(e.target.value).slice(0, 4) })}
-            error={errors.cvc}
+            autoComplete={isCard ? "cc-number" : "off"}
+            placeholder={isCard ? "1234 5678 9012 3456" : "0917 123 4567"}
+            className="max-w-sm"
+            value={shown}
+            onChange={(e) => onChange({ ...value, number: digits(e.target.value).slice(0, isCard ? 16 : 13) })}
+            error={errors.number}
           />
         </div>
-      )}
-      {value.method === "gcash" && (
-        <div key="gcash" className="step-in max-w-xs">
-          <Field
-            id="pay-gcash"
-            label="GCash mobile number"
-            type="tel"
-            inputMode="tel"
-            placeholder="0917 123 4567"
-            value={value.gcash}
-            onChange={(e) => onChange({ ...value, gcash: e.target.value })}
-            error={errors.gcash}
-          />
-        </div>
-      )}
-      {value.method === "cod" && (
-        <p key="cod" className="step-in text-muted-foreground text-sm">
-          Please have the exact amount ready when your order arrives.
-        </p>
       )}
     </div>
   )
 }
 
-function ReviewSection({ title, onEdit, children }: { title: string; onEdit?: () => void; children: ReactNode }) {
+function ReviewPanel({ title, change, onChange, children }: { title: string; change: string; onChange: () => void; children: ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground font-mono text-[10px] tracking-[0.2em] uppercase">{title}</p>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="text-xs font-medium underline-offset-4 hover:underline">
-            Edit
-          </button>
-        )}
+    <div className="bg-muted/30 flex flex-col gap-4 rounded-xl border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-base font-semibold">{title}</p>
+        <button
+          type="button"
+          onClick={onChange}
+          className="hover:bg-muted rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+        >
+          {change}
+        </button>
+      </div>
+      <div className="space-y-1 text-sm">{children}</div>
+    </div>
+  )
+}
+
+export function ReviewStep({
+  shipping,
+  payment,
+  onEdit,
+  children,
+}: {
+  shipping: ShippingInfo
+  payment: PaymentInfo
+  onEdit: (step: number) => void
+  children?: ReactNode
+}) {
+  const delivery = DELIVERY[shipping.delivery]
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold tracking-tight">Make sure everything's right before we send it your way.</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ReviewPanel title="Delivery" change="Change" onChange={() => onEdit(0)}>
+          <p className="font-medium">{shipping.name}</p>
+          <p>
+            {shipping.address}, {shipping.city}
+          </p>
+          <p className="text-muted-foreground">{shipping.phone}</p>
+          <p className="text-muted-foreground pt-2">
+            {delivery.label} · {delivery.detail.toLowerCase()}
+          </p>
+        </ReviewPanel>
+        <ReviewPanel title="Payment" change="Change" onChange={() => onEdit(1)}>
+          <div className="flex items-center gap-3">
+            {payment.method === "card" && <CardLogo brand={payment.brand} />}
+            {payment.method === "bank" && <BankLogo bank={payment.bank} />}
+            <p className="font-medium">{paymentSummary(payment)}</p>
+          </div>
+        </ReviewPanel>
       </div>
       {children}
     </div>
   )
 }
 
-export function ReviewStep({
+export function OrderSummary({
   items,
-  shipping,
-  payment,
   subtotal,
-  onEdit,
-  children,
+  fee,
+  className,
 }: {
   items: CartItem[]
-  shipping: ShippingInfo
-  payment: PaymentInfo
   subtotal: number
-  onEdit: (step: number) => void
-  children?: ReactNode
+  fee: number
+  className?: string
 }) {
-  const fee = DELIVERY[shipping.delivery].fee
   return (
-    <div className="space-y-5">
-      <div>
-        <h3 className="font-medium">One last look</h3>
-        <p className="text-muted-foreground text-sm">Make sure everything's right before we send it your way.</p>
-      </div>
-      <ReviewSection title="Your items">
-        <ul className="space-y-1 text-sm">
-          {items.map((i) => (
-            <li key={i.id} className="flex justify-between gap-4">
-              <span className="truncate">
-                {i.name} <span className="text-muted-foreground">× {i.quantity}</span>
-              </span>
-              <span className="shrink-0 tabular-nums">{formatPrice(i.price * i.quantity)}</span>
-            </li>
-          ))}
-        </ul>
-      </ReviewSection>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <ReviewSection title="Delivering to" onEdit={() => onEdit(0)}>
-          <p className="text-sm">
-            {shipping.name}
-            <br />
-            {shipping.address}, {shipping.city}
-            <br />
-            <span className="text-muted-foreground">
-              {shipping.phone} · {DELIVERY[shipping.delivery].label}
-            </span>
-          </p>
-        </ReviewSection>
-        <ReviewSection title="Paying with" onEdit={() => onEdit(1)}>
-          <p className="text-sm">{paymentSummary(payment)}</p>
-        </ReviewSection>
-      </div>
-      <Separator />
-      <div className="space-y-1 text-sm">
+    <aside className={cn("bg-card ring-foreground/10 rounded-xl p-6 ring-1", className)}>
+      <p className="text-lg font-semibold tracking-tight">Order summary</p>
+      <ul className="mt-5 space-y-4">
+        {items.map((i) => (
+          <li key={i.id} className="flex items-center gap-3">
+            <img
+              src={i.image}
+              alt=""
+              className="bg-muted size-14 shrink-0 rounded-lg object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = placeholderImage(i.name)
+              }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{i.name}</p>
+              <p className="text-muted-foreground text-xs">Qty {i.quantity}</p>
+            </div>
+            <p className="shrink-0 text-sm font-medium tabular-nums">{formatPrice(i.price * i.quantity)}</p>
+          </li>
+        ))}
+      </ul>
+      <Separator className="my-5" />
+      <div className="space-y-2 text-sm">
         <div className="text-muted-foreground flex justify-between">
           <span>Subtotal</span>
           <span className="tabular-nums">{formatPrice(subtotal)}</span>
@@ -295,12 +354,12 @@ export function ReviewStep({
           <span>Delivery</span>
           <span className="tabular-nums">{fee ? formatPrice(fee) : "Free"}</span>
         </div>
-        <div className="flex justify-between pt-1 text-base font-semibold">
-          <span>Total</span>
-          <span className="tabular-nums">{formatPrice(subtotal + fee)}</span>
-        </div>
       </div>
-      {children}
-    </div>
+      <Separator className="my-5" />
+      <div className="flex items-baseline justify-between">
+        <span className="font-semibold">Total</span>
+        <span className="text-2xl font-semibold tracking-tight tabular-nums">{formatPrice(subtotal + fee)}</span>
+      </div>
+    </aside>
   )
 }
